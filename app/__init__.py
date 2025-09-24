@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_cors import CORS
@@ -17,10 +17,15 @@ def create_app():
     db.init_app(app)
     migrate.init_app(app, db)
     ma.init_app(app)
-    CORS(app)  # Enable frontend cross-domain access
+    CORS(app)
 
     # Import and register all route Blueprints
-    from app.routes import api_bp  # updated to import central Blueprint
+    from app.routes import api_bp
     app.register_blueprint(api_bp)
+
+    # Root route
+    @app.route("/")
+    def index():
+        return jsonify({"message": "Project backend is running!"})
 
     return app

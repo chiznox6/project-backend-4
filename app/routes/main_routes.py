@@ -1,8 +1,15 @@
-from flask import Blueprint, jsonify
+from flask import Blueprint, jsonify, request
 from app.models import db, User, Product, CartItem, AffiliateSource
 from app.schemas import ProductSchema, CartItemSchema
 from datetime import datetime, timedelta
 from sqlalchemy import extract, func
+
+# Import Amazon service functions
+from app.services.amazon_service import (
+    search_amazon_products,
+    get_product_details,
+    get_product_reviews,
+)
 
 main_routes = Blueprint("main_routes", __name__)
 
@@ -12,7 +19,11 @@ products_schema = ProductSchema(many=True)
 cart_item_schema = CartItemSchema()
 cart_items_schema = CartItemSchema(many=True)
 
-# --- Shipment Summary ---
+
+# ===============================
+# 🚚 Shipment + Analytics Routes
+# ===============================
+
 @main_routes.route("/shipments/summary", methods=["GET"])
 def shipment_summary():
     """Returns total cart items and total users."""
@@ -21,7 +32,7 @@ def shipment_summary():
     return jsonify({"total_items": total_items, "total_users": total_users})
 
 
-# --- Top Products ---
+
 @main_routes.route("/products/top", methods=["GET"])
 def top_products():
     """Returns top 5 products by number of times added to cart."""
@@ -37,7 +48,7 @@ def top_products():
         {
             "id": p.id,
             "name": p.name,
-            "price": float(p.price) if p.price else None,  # ensure JSON serializable
+            "price": float(p.price) if p.price else None,
             "image_url": p.image_url,
             "cart_count": count,
         }
@@ -46,7 +57,7 @@ def top_products():
     return jsonify(result)
 
 
-# --- Items Shipped ---
+
 @main_routes.route("/shipments/items", methods=["GET"])
 def items_shipped():
     """Returns total quantity of items shipped (cart quantities)."""
@@ -54,7 +65,7 @@ def items_shipped():
     return jsonify({"total_quantity": total_quantity})
 
 
-# --- Level Comparison ---
+
 @main_routes.route("/metrics/level", methods=["GET"])
 def level_comparison():
     """Compares number of items added this month vs last month."""
@@ -72,7 +83,7 @@ def level_comparison():
     return jsonify({"this_month": this_month_count, "last_month": last_month_count})
 
 
-# --- Donut Chart ---
+
 @main_routes.route("/charts/donut", methods=["GET"])
 def donut_chart():
     """Returns percentage of products per affiliate source."""
@@ -86,7 +97,7 @@ def donut_chart():
     return jsonify(chart_data)
 
 
-# --- Sales Graph ---
+
 @main_routes.route("/charts/sales", methods=["GET"])
 def sales_graph():
     """Returns total quantity per day for the last 7 days."""
@@ -98,3 +109,41 @@ def sales_graph():
         ).count()
         results.append({"date": day.strftime("%Y-%m-%d"), "count": count})
     return jsonify(list(reversed(results)))
+
+
+# ===============================
+# 🛒 Amazon API Routes
+# ===============================
+
+@main_routes.route("/amazon/search", methods=["GET"])
+def amazon_search():
+    """Search Amazon products live from API."""
+    query = request.args.get("query")
+    page = request.args.get("page", 1, type=int)
+    country = request.args.get("country", "US")
+    sort_by = request.args.get("sort_by", "RELEVANCE")
+
+    if not query:
+        return jsonify({"error": "Missing required parameter: query"}), 400
+
+    data = search_amazon_products(query, page, country, sort_by)
+    return jsonify(data)
+
+
+@main_routes.route("/amazon/product/<asin>", methods=["GET"])
+def amazon_product_details(asin):
+    """Fetch Amazon product details by ASIN."""
+    country = request.args.get("country", "US")
+    data = get_product_details(asin, country)
+    return jsonify(data)
+
+
+@main_routes.route("/amazon/product/<asin>/reviews", methods=["GET"])
+def amazon_product_reviews(asin):
+    """Fetch Amazon product reviews by ASIN."""
+    country = request.args.get("country", "US")
+    page = request.args.get("page", 1, type=int)
+    sort_by = request.args.get("sort_by", "TOP_REVIEWS")
+
+    data = get_product_reviews(asin, country, page, sort_by)
+    return jsonify(data)

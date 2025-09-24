@@ -13,12 +13,14 @@ def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
 
+    # Initialize extensions
     db.init_app(app)
     migrate.init_app(app, db)
     ma.init_app(app)
-    CORS(app)
+    CORS(app)  # Enable frontend cross-domain access
 
-    from app.routes import main_routes
-    app.register_blueprint(main_routes)
+    # Import and register all route Blueprints
+    from app.routes import api_bp  # updated to import central Blueprint
+    app.register_blueprint(api_bp)
 
     return app

@@ -22,6 +22,9 @@ def get_user(id):
 @user_bp.route("/", methods=["POST"])
 def create_user():
     data = request.get_json()
+    errors = user_schema.validate(data)
+    if errors:
+        return jsonify(errors), 400
     user = User(**data)
     db.session.add(user)
     db.session.commit()
@@ -32,6 +35,9 @@ def create_user():
 def update_user(id):
     user = User.query.get_or_404(id)
     data = request.get_json()
+    errors = user_schema.validate(data, partial=True)
+    if errors:
+        return jsonify(errors), 400
     for key, value in data.items():
         setattr(user, key, value)
     db.session.commit()

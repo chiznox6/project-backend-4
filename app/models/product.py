@@ -1,4 +1,4 @@
-from . import db
+from app.extensions import db
 from sqlalchemy import Index
 from decimal import Decimal
 

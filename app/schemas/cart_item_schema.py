@@ -1,17 +1,13 @@
-from app.models import CartItem
-from app.schemas import ma  # use centralized ma import
+from app.extensions import ma
+from app.models.cart_item import CartItem
+from app.schemas.product_schema import ProductSchema
 
 class CartItemSchema(ma.SQLAlchemyAutoSchema):
+    product = ma.Nested(ProductSchema)
+
     class Meta:
         model = CartItem
-        load_instance = True
         include_fk = True
-        fields = (
-            "id",
-            "user_id",
-            "product_id",
-            "quantity",
-            "notes",
-            "added_at",
-        )
-        ordered = True  # keep fields in predictable order
+
+cart_item_schema = CartItemSchema()
+cart_items_schema = CartItemSchema(many=True)

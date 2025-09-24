@@ -3,6 +3,7 @@ from app.models import db, User, Product, CartItem, AffiliateSource
 from app.schemas import ProductSchema, CartItemSchema
 from datetime import datetime, timedelta
 from sqlalchemy import extract, func
+from decimal import Decimal
 
 # Import Amazon service functions
 from app.services.amazon_service import (
@@ -147,3 +148,48 @@ def amazon_product_reviews(asin):
 
     data = get_product_reviews(asin, country, page, sort_by)
     return jsonify(data)
+
+@main_routes.route("/seed", methods=["GET"])
+def seed_database():
+    """Seeds the database with initial data."""
+    # Create an affiliate source if it doesn't exist
+    amazon_source = AffiliateSource.query.filter_by(name="Amazon").first()
+    if not amazon_source:
+        amazon_source = AffiliateSource(name="Amazon", api_name="amazon", base_url="https://www.amazon.com")
+        db.session.add(amazon_source)
+        db.session.commit()
+
+    # Create some products
+    products_to_create = [
+        {
+            "name": "Wireless Mouse",
+            "price": Decimal("25.99"),
+            "image_url": "https://via.placeholder.com/150",
+            "affiliate_link": "https://www.amazon.com/dp/B07S395R4P",
+            "affiliate_source_id": amazon_source.id,
+        },
+        {
+            "name": "Mechanical Keyboard",
+            "price": Decimal("79.99"),
+            "image_url": "https://via.placeholder.com/150",
+            "affiliate_link": "https://www.amazon.com/dp/B07S395R4P",
+            "affiliate_source_id": amazon_source.id,
+        },
+        {
+            "name": "USB-C Hub",
+            "price": Decimal("39.99"),
+            "image_url": "https://via.placeholder.com/150",
+            "affiliate_link": "https://www.amazon.com/dp/B07S395R4P",
+            "affiliate_source_id": amazon_source.id,
+        },
+    ]
+
+    for product_data in products_to_create:
+        product = Product.query.filter_by(name=product_data["name"]).first()
+        if not product:
+            new_product = Product(**product_data)
+            db.session.add(new_product)
+
+    db.session.commit()
+
+    return jsonify({"message": "Database seeded successfully!"}), 200

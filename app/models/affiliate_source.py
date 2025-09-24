@@ -1,4 +1,4 @@
-from . import db
+from app.extensions import db
 
 class AffiliateSource(db.Model):
     __tablename__ = "affiliate_sources"

@@ -1,13 +1,7 @@
 from flask import Flask, jsonify
-from flask_sqlalchemy import SQLAlchemy
-from flask_migrate import Migrate
 from flask_cors import CORS
-from flask_marshmallow import Marshmallow
 from config import Config
-
-db = SQLAlchemy()
-migrate = Migrate()
-ma = Marshmallow()
+from app.extensions import db, migrate, ma
 
 def create_app():
     app = Flask(__name__)
@@ -19,9 +13,15 @@ def create_app():
     ma.init_app(app)
     CORS(app)
 
-    # Import and register all route Blueprints
-    from app.routes import api_bp
+    # Import models
+    from app.models import user, product, cart_item, affiliate_source
+
+    # Import and register Blueprints
+    from app.routes import api_bp           # existing blueprint
+    from app.routes.cart import cart_bp    # <-- import cart blueprint
+
     app.register_blueprint(api_bp)
+    app.register_blueprint(cart_bp)        # <-- register cart blueprint
 
     # Root route
     @app.route("/")

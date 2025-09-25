@@ -13,15 +13,15 @@ def create_app():
     ma.init_app(app)
     CORS(app)
 
-    # Import models
+    # Import models (needed for migrations)
     from app.models import user, product, cart_item, affiliate_source
 
     # Import and register Blueprints
-    from app.routes import api_bp           # existing blueprint
-    from app.routes.cart import cart_bp    # <-- import cart blueprint
+    from app.routes import api_bp           # central API blueprint (users, products, cart-items, affiliates)
+    from app.routes.cart import cart_bp     # partner's extra cart blueprint
 
-    app.register_blueprint(api_bp)
-    app.register_blueprint(cart_bp)        # <-- register cart blueprint
+    app.register_blueprint(api_bp)          # /api/... endpoints
+    app.register_blueprint(cart_bp)         # /cart/... endpoints
 
     # Root route
     @app.route("/")
